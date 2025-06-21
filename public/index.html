@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -43,12 +43,156 @@
             color: #28a745;
             font-weight: bold;
         }
+        .deployment-status {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #4caf50; }
+        .status-offline { background-color: #f44336; }
+        .status-loading { background-color: #ff9800; }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .test-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 5px 5px 0;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .response-area {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .error { color: #f44336; }
+        .success { color: #4caf50; }
+        .info { color: #2196f3; }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎌 AniCrush API</h1>
         <p>Welcome to the AniCrush API! This serverless API provides anime information and streaming sources.</p>
+        
+        <!-- Deployment Status -->
+        <div class="deployment-status">
+            <h3>🚀 Deployment Status</h3>
+            <div id="deployment-info">
+                <span class="status-indicator status-loading"></span>
+                <span id="status-text">Checking deployment status...</span>
+            </div>
+            <div id="deployment-details" style="margin-top: 10px; font-size: 14px; color: #666;"></div>
+        </div>
+
+        <!-- API Stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="uptime">--</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="response-time">--</div>
+                <div class="stat-label">Response Time (ms)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="requests">0</div>
+                <div class="stat-label">Test Requests</div>
+            </div>
+        </div>
+
+        <!-- API Testing Section -->
+        <div class="test-section">
+            <h3>🧪 Test API Endpoints</h3>
+            
+            <div>
+                <label>Search Anime:</label>
+                <input type="text" id="search-keyword" class="test-input" placeholder="Enter anime name (e.g., naruto)" value="naruto">
+                <button onclick="testSearch()" class="test-button">Search</button>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label>Movie ID (for other endpoints):</label>
+                <input type="text" id="movie-id" class="test-input" placeholder="Enter movie ID (e.g., d1YCXh)" value="d1YCXh">
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button onclick="testEpisodes()" class="test-button">Get Episodes</button>
+                <button onclick="testServers()" class="test-button">Get Servers</button>
+                <button onclick="testSources()" class="test-button">Get Sources</button>
+                <button onclick="testMapper()" class="test-button">Test Mapper</button>
+            </div>
+
+            <div id="response" class="response-area" style="display: none;"></div>
+        </div>
         
         <h2>Available Endpoints:</h2>
         
@@ -92,5 +236,152 @@
             ✅ API is running on Netlify Functions
         </div>
     </div>
+
+    <script>
+        let requestCount = 0;
+        let startTime = Date.now();
+
+        // Check deployment status
+        async function checkDeploymentStatus() {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('status-text');
+            const deploymentDetails = document.getElementById('deployment-details');
+            
+            try {
+                // Test a simple endpoint to check if API is working
+                const start = Date.now();
+                const response = await fetch('/api/anime/search?keyword=test&limit=1');
+                const responseTime = Date.now() - start;
+                
+                if (response.ok) {
+                    statusIndicator.className = 'status-indicator status-online';
+                    statusText.textContent = 'API is online and responding';
+                    deploymentDetails.innerHTML = `
+                        <strong>Response Time:</strong> ${responseTime}ms<br>
+                        <strong>Status Code:</strong> ${response.status}<br>
+                        <strong>Last Check:</strong> ${new Date().toLocaleTimeString()}
+                    `;
+                    
+                    // Update stats
+                    document.getElementById('response-time').textContent = responseTime;
+                    document.getElementById('uptime').textContent = formatUptime(Date.now() - startTime);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'API is offline or not responding';
+                deploymentDetails.innerHTML = `
+                    <strong>Error:</strong> ${error.message}<br>
+                    <strong>Last Check:</strong> ${new Date().toLocaleTimeString()}
+                `;
+            }
+        }
+
+        function formatUptime(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        // API Testing Functions
+        async function testSearch() {
+            const keyword = document.getElementById('search-keyword').value;
+            if (!keyword) {
+                showResponse('Please enter a search keyword', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/search?keyword=${encodeURIComponent(keyword)}&limit=5`, 'Search Results');
+        }
+
+        async function testEpisodes() {
+            const movieId = document.getElementById('movie-id').value;
+            if (!movieId) {
+                showResponse('Please enter a movie ID', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/episodes?movieId=${encodeURIComponent(movieId)}`, 'Episode List');
+        }
+
+        async function testServers() {
+            const movieId = document.getElementById('movie-id').value;
+            if (!movieId) {
+                showResponse('Please enter a movie ID', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/servers/${encodeURIComponent(movieId)}?episode=1`, 'Server List');
+        }
+
+        async function testSources() {
+            const movieId = document.getElementById('movie-id').value;
+            if (!movieId) {
+                showResponse('Please enter a movie ID', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/sources?movieId=${encodeURIComponent(movieId)}&episode=1&server=4&subOrDub=sub`, 'Video Sources');
+        }
+
+        async function testMapper() {
+            await makeRequest('/api/mapper/21', 'AniList Mapper (One Piece)');
+        }
+
+        async function makeRequest(url, title) {
+            const responseArea = document.getElementById('response');
+            responseArea.style.display = 'block';
+            responseArea.innerHTML = `<div class="loading"></div> Testing ${title}...`;
+            
+            try {
+                const start = Date.now();
+                const response = await fetch(url);
+                const responseTime = Date.now() - start;
+                const data = await response.json();
+                
+                requestCount++;
+                document.getElementById('requests').textContent = requestCount;
+                
+                const result = {
+                    url: url,
+                    status: response.status,
+                    responseTime: responseTime,
+                    timestamp: new Date().toISOString(),
+                    data: data
+                };
+                
+                showResponse(JSON.stringify(result, null, 2), response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showResponse(content, type) {
+            const responseArea = document.getElementById('response');
+            responseArea.style.display = 'block';
+            responseArea.className = `response-area ${type}`;
+            responseArea.textContent = content;
+        }
+
+        // Initialize
+        checkDeploymentStatus();
+        
+        // Check status every 30 seconds
+        setInterval(checkDeploymentStatus, 30000);
+        
+        // Update uptime every second
+        setInterval(() => {
+            document.getElementById('uptime').textContent = formatUptime(Date.now() - startTime);
+        }, 1000);
+    </script>
 </body>
 </html> 
