@@ -1,6 +1,8 @@
 const axios = require('axios');
 const { mapAniListToAnicrush, getCommonHeaders } = require('../../mapper');
 const { getHlsLink } = require('../../hls');
+const { getGenericHlsLink } = require('../../genericHls');
+const { decryptSources } = require('../../sources/getEmbedSource');
 
 exports.handler = async (event, context) => {
   // Enable CORS
@@ -197,6 +199,52 @@ exports.handler = async (event, context) => {
         statusCode: 200,
         headers,
         body: JSON.stringify(hlsLink)
+      };
+    }
+
+    // Embed conversion endpoints
+    if (path === '/api/anime/embed/convert' && event.httpMethod === 'GET') {
+      const { embedUrl, host } = params;
+
+      if (!embedUrl || !embedUrl.startsWith('http')) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Embed URL is required' })
+        };
+      }
+      if (!host) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Host is required' })
+        };
+      }
+      
+      const hlsData = await getGenericHlsLink(embedUrl, host);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(hlsData)
+      };
+    }
+
+    if (path === '/api/anime/embed/convert/v2' && event.httpMethod === 'GET') {
+      const { embedUrl } = params;
+
+      if (!embedUrl || !embedUrl.startsWith('http')) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Embed URL is required' })
+        };
+      }
+      
+      const hlsData = await decryptSources(embedUrl);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(hlsData)
       };
     }
 

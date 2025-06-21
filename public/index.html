@@ -191,6 +191,16 @@
                 <button onclick="testMapper()" class="test-button">Test Mapper</button>
             </div>
 
+            <div style="margin-top: 15px;">
+                <label>Embed URL (for conversion):</label>
+                <input type="text" id="embed-url" class="test-input" placeholder="Enter embed URL" value="https://megacloud.blog/embed-2/v2/e-1/1Iz9gXT6aAOs?z=">
+            </div>
+
+            <div style="margin-top: 15px;">
+                <button onclick="testEmbedConvert()" class="test-button">Test Embed Convert</button>
+                <button onclick="testEmbedConvertV2()" class="test-button">Test Embed Convert V2</button>
+            </div>
+
             <div id="response" class="response-area" style="display: none;"></div>
         </div>
         
@@ -224,6 +234,18 @@
             <div class="method">GET</div>
             <div class="url">/api/anime/hls/{movieId}?url={url}</div>
             <p>Get HLS streaming link</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/embed/convert?embedUrl={url}&host={host}</div>
+            <p>Convert embed URL to HLS (generic method)</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/embed/convert/v2?embedUrl={url}</div>
+            <p>Convert embed URL to HLS (v2 method)</p>
         </div>
         
         <div class="endpoint">
@@ -335,6 +357,26 @@
 
         async function testMapper() {
             await makeRequest('/api/mapper/21', 'AniList Mapper (One Piece)');
+        }
+
+        async function testEmbedConvert() {
+            const embedUrl = document.getElementById('embed-url').value;
+            if (!embedUrl) {
+                showResponse('Please enter an embed URL', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/embed/convert?embedUrl=${encodeURIComponent(embedUrl)}&host=example.com`, 'Embed Convert');
+        }
+
+        async function testEmbedConvertV2() {
+            const embedUrl = document.getElementById('embed-url').value;
+            if (!embedUrl) {
+                showResponse('Please enter an embed URL', 'error');
+                return;
+            }
+            
+            await makeRequest(`/api/anime/embed/convert/v2?embedUrl=${encodeURIComponent(embedUrl)}`, 'Embed Convert V2');
         }
 
         async function makeRequest(url, title) {
