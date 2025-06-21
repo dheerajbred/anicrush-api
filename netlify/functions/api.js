@@ -1,0 +1,221 @@
+const axios = require('axios');
+const { mapAniListToAnicrush, getCommonHeaders } = require('../../mapper');
+const { getHlsLink } = require('../../hls');
+
+exports.handler = async (event, context) => {
+  // Enable CORS
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+  };
+
+  // Handle preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
+  const { path, queryStringParameters } = event;
+  const params = queryStringParameters || {};
+
+  try {
+    // Route handling
+    if (path.includes('/api/mapper/') && event.httpMethod === 'GET') {
+      const anilistId = path.split('/api/mapper/')[1];
+      if (!anilistId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'AniList ID is required' })
+        };
+      }
+      const mappedData = await mapAniListToAnicrush(anilistId);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(mappedData)
+      };
+    }
+
+    if (path === '/api/anime/search' && event.httpMethod === 'GET') {
+      const { keyword, page = 1, limit = 24 } = params;
+      if (!keyword) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Search keyword is required' })
+        };
+      }
+
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/movie/list`,
+        params: { keyword, page, limit },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
+    if (path === '/api/anime/episodes' && event.httpMethod === 'GET') {
+      const { movieId } = params;
+      if (!movieId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Movie ID is required' })
+        };
+      }
+
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/list`,
+        params: { _movieId: movieId },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
+    if (path.includes('/api/anime/servers/') && event.httpMethod === 'GET') {
+      const movieId = path.split('/api/anime/servers/')[1];
+      const { episode } = params;
+      
+      if (!movieId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Movie ID is required' })
+        };
+      }
+
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/servers`,
+        params: { _movieId: movieId, ep: episode || 1 },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
+    if (path === '/api/anime/sources' && event.httpMethod === 'GET') {
+      const { movieId, episode, server, subOrDub } = params;
+      
+      if (!movieId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Movie ID is required' })
+        };
+      }
+
+      const headers = getCommonHeaders();
+
+      // Check episode list
+      const episodeListResponse = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/list`,
+        params: { _movieId: movieId },
+        headers
+      });
+
+      if (!episodeListResponse.data || episodeListResponse.data.status === false) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Episode list not found' })
+        };
+      }
+
+      // Get servers
+      const serversResponse = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/servers`,
+        params: { _movieId: movieId, ep: episode || 1 },
+        headers
+      });
+
+      if (!serversResponse.data || serversResponse.data.status === false) {
+        return {
+          statusCode: 404,
+          headers,
+          body: JSON.stringify({ error: 'Servers not found' })
+        };
+      }
+
+      // Get sources
+      const sourcesResponse = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/sources`,
+        params: {
+          _movieId: movieId,
+          ep: episode || 1,
+          sv: server || 4,
+          sc: subOrDub || 'sub'
+        },
+        headers
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(sourcesResponse.data)
+      };
+    }
+
+    if (path.includes('/api/anime/hls/') && event.httpMethod === 'GET') {
+      const movieId = path.split('/api/anime/hls/')[1];
+      const { url } = params;
+      
+      if (!url) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'URL is required' })
+        };
+      }
+
+      const hlsLink = await getHlsLink(url);
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(hlsLink)
+      };
+    }
+
+    // Default response for unknown routes
+    return {
+      statusCode: 404,
+      headers,
+      body: JSON.stringify({ error: 'Endpoint not found' })
+    };
+
+  } catch (error) {
+    console.error('Error:', error);
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        error: 'Internal server error',
+        message: error.message
+      })
+    };
+  }
+}; 

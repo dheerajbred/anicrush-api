@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniCrush API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .method {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .url {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .status {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎌 AniCrush API</h1>
+        <p>Welcome to the AniCrush API! This serverless API provides anime information and streaming sources.</p>
+        
+        <h2>Available Endpoints:</h2>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/search?keyword={keyword}&page={page}&limit={limit}</div>
+            <p>Search for anime by keyword</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/episodes?movieId={movieId}</div>
+            <p>Get episode list for an anime</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/servers/{movieId}?episode={episode}</div>
+            <p>Get available servers for an episode</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/sources?movieId={movieId}&episode={episode}&server={server}&subOrDub={subOrDub}</div>
+            <p>Get video sources for streaming</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/anime/hls/{movieId}?url={url}</div>
+            <p>Get HLS streaming link</p>
+        </div>
+        
+        <div class="endpoint">
+            <div class="method">GET</div>
+            <div class="url">/api/mapper/{anilistId}</div>
+            <p>Map AniList ID to AniCrush ID</p>
+        </div>
+        
+        <div class="status">
+            ✅ API is running on Netlify Functions
+        </div>
+    </div>
+</body>
+</html> 

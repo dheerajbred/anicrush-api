@@ -2,13 +2,13 @@
   "name": "anime-api",
   "version": "1.0.0",
   "description": "API for fetching anime sources",
-  "main": "index.js",
   "engines": {
     "node": "18.x"
   },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build": "echo 'Build completed'",
     "vercel-build": "echo hello"
   },
   "dependencies": {
