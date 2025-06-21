@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-const axios = require('axios');
-
-const getCommonHeaders = () => ({
-    'Accept': 'application/json, text/plain, */*',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-    'x-site': 'anicrush',
-    'Referer': 'https://anicrush.to/',
-    'Origin': 'https://anicrush.to',
-    'sec-fetch-site': 'same-site',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-dest': 'empty'
-});
-
-module.exports = {
-    getCommonHeaders
-}; 
-=======
 const axios = require('axios');
 
 // Common headers for API requests
@@ -203,235 +185,146 @@ async function getEpisodeList(movieId) {
     }
 }
 
-// Function to calculate overall similarity between titles
+// Function to calculate title similarity
 function calculateTitleSimilarity(title1, title2) {
-    const levenshteinSim = calculateLevenshteinSimilarity(title1, title2);
-    const wordSim = calculateWordSimilarity(title1, title2);
+    const normalized1 = normalizeTitle(title1);
+    const normalized2 = normalizeTitle(title2);
     
-    // Weight the similarities (favoring word-based matching for titles)
-    return (levenshteinSim * 0.4) + (wordSim * 0.6);
+    const levenshteinScore = calculateLevenshteinSimilarity(normalized1, normalized2);
+    const wordScore = calculateWordSimilarity(normalized1, normalized2);
+    
+    return Math.max(levenshteinScore, wordScore);
 }
 
-// Function to find best match between AniList and anicrush results
+// Function to find the best match from search results
 function findBestMatch(anilistData, anicrushResults) {
-    if (!anicrushResults?.result?.movies || !anicrushResults.result.movies.length) {
+    if (!anicrushResults?.result?.movies || anicrushResults.result.movies.length === 0) {
         return null;
     }
 
-    // Prepare all possible titles from AniList
-    const titles = [
-        anilistData.title.romaji,
-        anilistData.title.english,
-        anilistData.title.native,
+    const movies = anicrushResults.result.movies;
+    let bestMatch = null;
+    let bestScore = 0;
+
+    // Get all possible titles from AniList data
+    const anilistTitles = [
+        anilistData.title?.romaji,
+        anilistData.title?.english,
+        anilistData.title?.native,
         ...(anilistData.synonyms || [])
     ].filter(Boolean);
 
-    let bestMatch = null;
-    let highestSimilarity = 0;
-
-    // Map AniList format to Anicrush type
-    const formatTypeMap = {
-        'TV': 'TV',
-        'TV_SHORT': 'TV',
-        'MOVIE': 'MOVIE',
-        'SPECIAL': 'SPECIAL',
-        'OVA': 'OVA',
-        'ONA': 'ONA',
-        'MUSIC': 'MUSIC'
-    };
-    
-    const expectedType = formatTypeMap[anilistData.format] || null;
-
-    // Check each result from anicrush
-    for (const result of anicrushResults.result.movies) {
-        const resultTitles = [
-            result.name,
-            result.name_english
+    for (const movie of movies) {
+        const movieTitles = [
+            movie.name,
+            movie.name_english
         ].filter(Boolean);
 
-        for (const resultTitle of resultTitles) {
-            // Try each possible title combination
-            for (const title of titles) {
-                // Remove common words that might cause false matches
-                const cleanTitle1 = normalizeTitle(title).replace(/\b(season|2nd|3rd|4th|5th|6th|7th|8th|9th|10th|11th|12th|13th|14th|15th|16th|17th|18th|19th|20th|21st|22nd|23rd|24th|25th|26th|27th|28th|29th|30th|31st|32nd|33rd|34th|35th|36th|37th|38th|39th|40th|41st|42nd|43rd|44th|45th|46th|47th|48th|49th|50th)\b/gi, '');
-                const cleanTitle2 = normalizeTitle(resultTitle).replace(/\b(season|2nd|3rd|4th|5th|6th|7th|8th|9th|10th|11th|12th|13th|14th|15th|16th|17th|18th|19th|20th|21st|22nd|23rd|24th|25th|26th|27th|28th|29th|30th|31st|32nd|33rd|34th|35th|36th|37th|38th|39th|40th|41st|42nd|43rd|44th|45th|46th|47th|48th|49th|50th)\b/gi, '');
+        let movieBestScore = 0;
 
-                const similarity = calculateTitleSimilarity(cleanTitle1, cleanTitle2);
-
-                // Add bonus for year match
-                let currentSimilarity = similarity;
-                if (anilistData.seasonYear && result.aired_from) {
-                    const yearMatch = result.aired_from.includes(anilistData.seasonYear.toString());
-                    if (yearMatch) currentSimilarity += 10; // Reduced from 15 to 10
-                }
-                
-                // Add bonus for type match
-                if (expectedType && result.type) {
-                    if (expectedType === result.type) {
-                        currentSimilarity += 25; // Increased from 10 to 25
-                    } else {
-                        currentSimilarity -= 30; // Add significant penalty for type mismatch
-                    }
-                }
-
-                // Add penalty for episode count mismatch (if available)
-                if (anilistData.episodes && result.episodes_count) {
-                    const episodeDiff = Math.abs(anilistData.episodes - result.episodes_count);
-                    if (episodeDiff > 2) { // Allow small differences
-                        currentSimilarity -= (episodeDiff * 2);
-                    }
-                }
-
-                // Add penalty for length difference
-                const lengthDiff = Math.abs(cleanTitle1.length - cleanTitle2.length);
-                if (lengthDiff > 10) {
-                    currentSimilarity -= (lengthDiff * 0.5);
-                }
-
-                // Add penalty for completely different first words
-                const firstWord1 = cleanTitle1.split(' ')[0];
-                const firstWord2 = cleanTitle2.split(' ')[0];
-                if (firstWord1 && firstWord2 && firstWord1 !== firstWord2) {
-                    currentSimilarity -= 20;
-                }
-
-                if (currentSimilarity > highestSimilarity) {
-                    highestSimilarity = currentSimilarity;
-                    bestMatch = result;
-                }
+        for (const anilistTitle of anilistTitles) {
+            for (const movieTitle of movieTitles) {
+                const score = calculateTitleSimilarity(anilistTitle, movieTitle);
+                movieBestScore = Math.max(movieBestScore, score);
             }
         }
-    }
 
-    // Only return a match if similarity is above threshold
-    console.log(`Best match found with similarity: ${highestSimilarity}%`);
-    return highestSimilarity >= 70 ? bestMatch : null; // Increased threshold from 60 to 70
-}
-
-// Function to parse episode list response
-function parseEpisodeList(episodeList) {
-    if (!episodeList?.result) return [];
-    
-    const episodes = [];
-    for (const [key, value] of Object.entries(episodeList.result)) {
-        if (Array.isArray(value)) {
-            value.forEach(ep => {
-                episodes.push({
-                    number: ep.number,
-                    name: ep.name,
-                    name_english: ep.name_english,
-                    is_filler: ep.is_filler
-                });
-            });
+        if (movieBestScore > bestScore) {
+            bestScore = movieBestScore;
+            bestMatch = movie;
         }
     }
-    return episodes.sort((a, b) => a.number - b.number);
+
+    // Only return match if similarity is above threshold
+    return bestScore >= 60 ? bestMatch : null;
 }
 
-// Function to fetch ani.zip mappings
+// Function to parse episode list and extract episode numbers
+function parseEpisodeList(episodeList) {
+    if (!episodeList?.result?.episodes) {
+        return [];
+    }
+
+    return episodeList.result.episodes.map(episode => ({
+        episode: episode.episode,
+        title: episode.title || `Episode ${episode.episode}`,
+        id: episode.id
+    }));
+}
+
+// Function to get AniZip mappings (if available)
 async function getAniZipMappings(anilistId) {
     try {
-        const response = await axios({
-            method: 'GET',
-            url: `https://api.ani.zip/mappings?anilist_id=${anilistId}`,
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-
+        const response = await axios.get(`https://raw.githubusercontent.com/AniZip/AniZip/main/mappings/anilist/${anilistId}.json`);
         return response.data;
     } catch (error) {
-        console.error('Error fetching ani.zip mappings:', error.message);
+        console.log('No AniZip mapping found for AniList ID:', anilistId);
         return null;
     }
 }
 
-// Main mapper function
+// Main function to map AniList ID to AniCrush data
 async function mapAniListToAnicrush(anilistId) {
     try {
-        // Get AniList details
+        // Get AniList data
         const anilistData = await getAniListDetails(anilistId);
         
-        // Get ani.zip mappings for episode images
-        const aniZipData = await getAniZipMappings(anilistId);
+        // Try to get AniZip mapping first
+        const anizipMapping = await getAniZipMappings(anilistId);
         
-        // Try all possible titles for search
-        const titlesToTry = [
-            anilistData.title.romaji,
-            anilistData.title.english,
-            anilistData.title.native,
-            ...(anilistData.synonyms || [])
-        ].filter(Boolean);
-
-        let searchResults = null;
-        let bestMatch = null;
-
-        // Try each title until we find a match
-        for (const title of titlesToTry) {
-            console.log(`Trying title: ${title}`);
-            searchResults = await searchAnicrush(title);
-            bestMatch = findBestMatch(anilistData, searchResults);
-            if (bestMatch) break;
+        if (anizipMapping?.sites?.anicrush?.id) {
+            // Use AniZip mapping if available
+            const movieId = anizipMapping.sites.anicrush.id;
+            const episodeList = await getEpisodeList(movieId);
+            
+            return {
+                success: true,
+                anilistId: parseInt(anilistId),
+                anicrushId: movieId,
+                title: anilistData.title?.romaji || anilistData.title?.english,
+                episodes: parseEpisodeList(episodeList),
+                source: 'anizip'
+            };
         }
+
+        // Fallback to search-based mapping
+        const searchTitle = anilistData.title?.romaji || anilistData.title?.english;
+        const searchResults = await searchAnicrush(searchTitle);
+        const bestMatch = findBestMatch(anilistData, searchResults);
 
         if (!bestMatch) {
-            throw new Error('No matching anime found on anicrush');
+            return {
+                success: false,
+                anilistId: parseInt(anilistId),
+                title: searchTitle,
+                message: 'No matching anime found on AniCrush'
+            };
         }
 
-        // Get episode list
+        // Get episode list for the matched anime
         const episodeList = await getEpisodeList(bestMatch.id);
-        const parsedEpisodes = parseEpisodeList(episodeList);
-
-        // Create episode mapping with images from ani.zip
-        const episodes = parsedEpisodes.map(ep => {
-            const aniZipEpisode = aniZipData?.episodes?.[ep.number] || {};
-            return {
-                number: ep.number,
-                name: ep.name,
-                name_english: ep.name_english,
-                is_filler: ep.is_filler,
-                id: `${bestMatch.id}?episode=${ep.number}`,
-                image: aniZipEpisode.image || null,
-                overview: aniZipEpisode.overview || null,
-                airDate: aniZipEpisode.airDate || null,
-                runtime: aniZipEpisode.runtime || null
-            };
-        });
 
         return {
-            anilist_id: anilistId,
-            anicrush_id: bestMatch.id,
-            titles: {
-                romaji: anilistData.title.romaji,
-                english: anilistData.title.english,
-                native: anilistData.title.native,
-                synonyms: anilistData.synonyms,
-                anicrush: bestMatch.name,
-                anicrush_english: bestMatch.name_english,
-                additional: aniZipData?.titles || {}
-            },
-            type: bestMatch.type,
-            total_episodes: episodes.length,
-            episodes: episodes,
-            format: anilistData.format,
-            status: anilistData.status,
-            mal_score: bestMatch.mal_score,
-            genres: bestMatch.genres,
-            country_of_origin: anilistData.countryOfOrigin,
-            year: anilistData.seasonYear,
-            description: anilistData.description,
-            images: aniZipData?.images || []
+            success: true,
+            anilistId: parseInt(anilistId),
+            anicrushId: bestMatch.id,
+            title: bestMatch.name,
+            englishTitle: bestMatch.name_english,
+            episodes: parseEpisodeList(episodeList),
+            source: 'search'
         };
 
     } catch (error) {
-        console.error('Mapper error:', error.message);
-        throw error;
+        console.error('Mapping error:', error.message);
+        return {
+            success: false,
+            anilistId: parseInt(anilistId),
+            message: error.message
+        };
     }
 }
 
 module.exports = {
-    mapAniListToAnicrush,
     getCommonHeaders,
-    getAniZipMappings
-}; 
->>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
+    mapAniListToAnicrush
+};

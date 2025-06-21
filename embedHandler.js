@@ -1,11 +1,5 @@
-<<<<<<< HEAD
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs').promises;
-=======
 const axios = require('axios');
 const crypto = require('node:crypto');
->>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
 
 class EmbedSource {
     constructor(file, sourceType) {
@@ -36,77 +30,6 @@ class EmbedSources {
     }
 }
 
-<<<<<<< HEAD
-const findRabbitScript = async () => {
-    const possiblePaths = [
-        path.join(__dirname, 'sources', 'rabbit.ts'),
-        path.join(__dirname, 'sources', 'rabbit.js'),
-        path.join(__dirname, 'rabbit.js'),
-        path.join(process.cwd(), 'rabbit.js')
-    ];
-
-    for (const p of possiblePaths) {
-        try {
-            await fs.access(p);
-            return p;
-        } catch (error) {
-            continue;
-        }
-    }
-    throw new Error('rabbit.js not found in any expected locations');
-};
-
-const handleEmbed = async (embedUrl, referrer) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            const rabbitPath = await findRabbitScript();
-            const childProcess = spawn('node', [
-                rabbitPath,
-                `--embed-url=${embedUrl}`,
-                `--referrer=${referrer}`
-            ]);
-
-            let outputData = '';
-            let errorData = '';
-
-            childProcess.stdout.on('data', (data) => {
-                outputData += data.toString();
-            });
-
-            childProcess.stderr.on('data', (data) => {
-                errorData += data.toString();
-            });
-
-            childProcess.on('close', (code) => {
-                if (code !== 0) {
-                    reject(new Error(`Process exited with code ${code}: ${errorData}`));
-                    return;
-                }
-
-                try {
-                    const parsedOutput = JSON.parse(outputData.trim());
-                    const embedSources = new EmbedSources(
-                        parsedOutput.sources.map(s => new EmbedSource(s.file, s.type)),
-                        parsedOutput.tracks.map(t => new Track(t.file, t.label, t.kind, t.default)),
-                        parsedOutput.t,
-                        parsedOutput.server,
-                        parsedOutput.intro,
-                        parsedOutput.outro
-                    );
-                    resolve(embedSources);
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            childProcess.on('error', (error) => {
-                reject(error);
-            });
-        } catch (error) {
-            reject(error);
-        }
-    });
-=======
 // Constants for Megacloud
 const MEGACLOUD_URL = 'https://megacloud.blog';
 const KEY_URL = 'https://raw.githubusercontent.com/yogesh-hacker/MegacloudKeys/refs/heads/main/keys.json';
@@ -198,28 +121,32 @@ const handleEmbed = async (embedUrl, referrer = 'https://megacloud.blog') => {
             throw new Error('Unexpected sources format');
         }
 
-        if (!rawSources.length) throw new Error('No valid sources found');
+        // Convert to EmbedSource objects
+        const sources = rawSources.map(s => new EmbedSource(s.file, s.type || 'hls'));
 
-        const sources = rawSources.map((s) => new EmbedSource(s.file, s.type || s.quality || 'unknown'));
-        const tracks = (data.tracks || []).map((t) => new Track(t.file, t.label, t.kind, t.default));
+        // Handle tracks if present
+        const tracks = [];
+        if (data.tracks) {
+            for (const track of data.tracks) {
+                tracks.push(new Track(track.file, track.label, track.kind, track.default));
+            }
+        }
 
         return new EmbedSources(
             sources,
             tracks,
-            data.t ?? 0,
-            'megacloud',
-            data.intro ?? null,
-            data.outro ?? null
+            data.t || 0,
+            data.server || 1,
+            data.intro || null,
+            data.outro || null
         );
+
     } catch (error) {
+        console.error('[ERROR][decryptSources] Error decrypting', embedUrl + ':', error);
         throw error;
     }
->>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
 };
 
 module.exports = {
-    handleEmbed,
-    EmbedSource,
-    Track,
-    EmbedSources
+    handleEmbed
 }; 
