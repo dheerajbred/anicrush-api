@@ -2,19 +2,32 @@
   "name": "anime-api",
   "version": "1.0.0",
   "description": "API for fetching anime sources",
+<<<<<<< HEAD
   "main": "server.js",
+=======
+  "main": "index.js",
+>>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
   "engines": {
     "node": "18.x"
   },
   "scripts": {
+<<<<<<< HEAD
     "start": "node server.js",
     "dev": "nodemon server.js",
+=======
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+>>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
     "vercel-build": "echo hello"
   },
   "dependencies": {
     "axios": "^1.6.2",
     "cors": "^2.8.5",
+<<<<<<< HEAD
     "crypto-js": "^4.2.0",
+=======
+    "crypto": "^1.0.1",
+>>>>>>> 2520c427dc124e4a6bf932292f600dc73f283529
     "dotenv": "^16.3.1",
     "express": "^4.18.2"
   },
