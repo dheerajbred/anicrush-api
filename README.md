@@ -1,164 +1,138 @@
-# AniCrush API
+# AniCrush API - Unofficial
 
-A Node.js/Express API for fetching anime sources and information from AniCrush.
+An unofficial, robust Node.js/Express API designed to scrape and fetch anime information, sources, and streaming links from AniCrush. It acts as a reliable proxy, providing clean JSON responses for seamless integration into your applications.
 
 ## Features
 
-- 🔍 Search anime by keyword
-- 📺 Get anime details and information
-- 📝 Fetch episode lists
-- 🎬 Get video sources and streaming links
-- 🌐 CORS enabled for cross-origin requests
-- 🔒 Secure API endpoints
-- 🗺️ Map AniList IDs to AniCrush IDs
+- 🔍 **Anime Search**: Find anime by keyword with pagination.
+- 📺 **Detailed Info**: Get comprehensive details about a specific anime.
+- 📝 **Episode Lists**: Fetch a complete list of episodes for any anime.
+- 🎬 **Video Sources**: Retrieve streaming links and server information.
+- ✨ **Recently Updated**: Get a list of the latest updated anime.
+- ❤️ **Most Favorite**: Fetch the most popular anime (home, weekly, etc.).
+- 🗺️ **AniList Mapping**: Map AniList IDs to AniCrush IDs and get metadata.
+- ⚡ **HLS Links**: Directly get HLS streaming links for episodes.
+- 🌐 **CORS Enabled**: Cross-origin requests supported for easy integration.
+- 🔒 **Secure & Reliable**: Built with security and stability in mind.
+- 🚀 **Multi-Platform Deployment**: Ready for Vercel, Netlify, and Railway.
 
 ## API Endpoints
 
-### Search Anime
-```
-GET /api/anime/search?keyword={keyword}&page={page}&limit={limit}
-```
+All endpoints are prefixed with `/api`.
 
-### Get Anime Info
-```
-GET /api/anime/info/{movieId}
-```
+### Anime Endpoints
 
-### Get Episodes
-```
-GET /api/anime/episodes?movieId={movieId}
-```
+| Method | Endpoint                          | Description                                      | Parameters                                       |
+|--------|-----------------------------------|--------------------------------------------------|--------------------------------------------------|
+| `GET`  | `/anime/search`                   | Search for anime by keyword.                     | `keyword` (required), `page` (1), `limit` (24)   |
+| `GET`  | `/anime/info/:movieId`            | Get detailed information about a specific anime. | `movieId` (required)                             |
+| `GET`  | `/anime/episodes`                 | Get the list of episodes for an anime.           | `movieId` (required)                             |
+| `GET`  | `/anime/servers/:movieId`         | Get available servers for a specific episode.    | `movieId` (required), `episode` (1)              |
+| `GET`  | `/anime/sources`                  | Get streaming sources for an episode.            | `movieId` (required), `episode`, `server`, `subOrDub` |
+| `GET`  | `/anime/hls/:movieId`             | Get HLS streaming link for an episode.           | `movieId` (required), `episode`, `server`, `subOrDub` |
+| `GET`  | `/anime/:anilistId/:episodeNum`   | Get HLS stream directly with AniList ID.         | `anilistId` (required), `episodeNum` (required)  |
+| `GET`  | `/anime/recently-updated`         | Get a list of recently updated anime.            | -                                                |
+| `GET`  | `/anime/most-favorite`            | Get the most favorite anime.                     | `type` (home, weekly, etc.)                      |
 
-### Get Servers
-```
-GET /api/anime/servers/{movieId}?episode={episode}
-```
+### Utility Endpoints
 
-### Get Sources
-```
-GET /api/anime/sources?movieId={movieId}&episode={episode}&server={server}&subOrDub={subOrDub}
-```
-
-### Get HLS Link
-```
-GET /api/anime/hls/{movieId}?url={url}
-```
-
-### Map AniList ID to AniCrush
-```
-GET /api/mapper/{anilistId}
-```
+| Method | Endpoint                          | Description                                      | Parameters                                       |
+|--------|-----------------------------------|--------------------------------------------------|--------------------------------------------------|
+| `GET`  | `/mapper/:anilistId`              | Map AniList ID to AniCrush ID and metadata.      | `anilistId` (required)                             |
+| `GET`  | `/anime/embed/convert/v2`         | Convert embed URL to HLS link (new method).      | `embedUrl` (required)                            |
+| `GET`  | `/health`                         | Health check endpoint.                           | -                                                |
 
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/dheerajbred/anicrush-api.git
-cd anicrush-api
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/dheerajbred/anicrush-api.git
+    cd anicrush-api
+    ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-3. Create a `.env` file (optional):
-```bash
-PORT=3001
-```
+3.  **Create a `.env` file (optional):**
+    ```
+    PORT=3001
+    ```
 
-4. Start the server:
-```bash
-npm start
-```
-
-For development with auto-reload:
-```bash
-npm run dev
-```
+4.  **Start the server:**
+    -   Production: `npm start`
+    -   Development (with auto-reload): `npm run dev`
 
 ## Usage Examples
 
-### Search for anime:
+### Search for anime
 ```bash
-curl "http://localhost:3001/api/anime/search?keyword=naruto&page=1&limit=5"
+curl "http://localhost:3001/api/anime/search?keyword=naruto&page=1"
 ```
 
-### Get anime details:
+### Get recently updated anime
 ```bash
-curl "http://localhost:3001/api/anime/info/d1YCXh"
+curl "http://localhost:3001/api/anime/recently-updated"
 ```
 
-### Get episodes:
+### Get most favorite anime (weekly)
 ```bash
-curl "http://localhost:3001/api/anime/episodes?movieId=d1YCXh"
+curl "http://localhost:3001/api/anime/most-favorite?type=weekly"
 ```
 
-### Map AniList ID:
+### Map AniList ID
 ```bash
 curl "http://localhost:3001/api/mapper/21"
 ```
 
+### Get direct stream with AniList ID
+```bash
+curl "http://localhost:3001/api/anime/21/1"
+```
+
 ## Deployment
 
-### Netlify (Serverless Functions)
-1. Connect your GitHub repository to Netlify
-2. Build settings:
-   - Build command: `npm run build`
-   - Publish directory: `public`
-3. Deploy automatically
+This API is ready for deployment on multiple platforms.
 
 ### Vercel (Recommended)
-1. Install Vercel CLI:
-```bash
-npm i -g vercel
-```
+1.  Install Vercel CLI: `npm i -g vercel`
+2.  Deploy: `vercel`
 
-2. Deploy:
-```bash
-vercel
-```
+### Netlify
+1.  Connect your GitHub repository to Netlify.
+2.  Set build command to `npm run build` and publish directory to `public`.
+3.  Deploy automatically on git push.
 
 ### Railway
-1. Connect your GitHub repository to Railway
-2. Railway will automatically detect and deploy your Node.js app
-
-### Heroku
-1. Create a Heroku app
-2. Push to Heroku:
-```bash
-heroku create your-app-name
-git push heroku main
-```
-
-## Environment Variables
-
-- `PORT` - Server port (default: 3001)
+1.  Connect your GitHub repository to Railway.
+2.  Railway will automatically detect and deploy the Node.js app.
 
 ## Dependencies
 
-- **express** - Web framework
-- **axios** - HTTP client
-- **cors** - Cross-origin resource sharing
-- **crypto-js** - Encryption/decryption
-- **dotenv** - Environment variables
+- **express**: Web framework for Node.js
+- **axios**: Promise-based HTTP client
+- **cors**: Middleware for enabling CORS
+- **crypto-js**: Library for standard and secure cryptographic algorithms
+- **dotenv**: Module for loading environment variables from a `.env` file
 
-## Development
+## Development Dependencies
 
-- **nodemon** - Auto-restart on file changes
+- **nodemon**: Utility that monitors for changes and automatically restarts the server.
 
 ## License
 
-MIT License
+This project is licensed under the **MIT License**.
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please follow these steps:
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/your-feature`).
+3.  Commit your changes (`git commit -m 'Add some amazing feature'`).
+4.  Push to the branch (`git push origin feature/your-feature`).
+5.  Open a Pull Request.
 
 ## Support
 
-If you encounter any issues, please open an issue on GitHub.
+If you encounter any issues or have questions, please [open an issue](https://github.com/dheerajbred/anicrush-api/issues) on GitHub.
