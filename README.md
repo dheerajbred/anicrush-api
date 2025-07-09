@@ -10,6 +10,7 @@ An unofficial, robust Node.js/Express API designed to scrape and fetch anime inf
 - 🎬 **Video Sources**: Retrieve streaming links and server information.
 - ✨ **Recently Updated**: Get a list of the latest updated anime.
 - ❤️ **Most Favorite**: Fetch the most popular anime (home, weekly, etc.).
+- 🎯 **Genre Filter**: Browse anime by specific genres with pagination.
 - 🗺️ **AniList Mapping**: Map AniList IDs to AniCrush IDs and get metadata.
 - ⚡ **HLS Links**: Directly get HLS streaming links for episodes.
 - 🌐 **CORS Enabled**: Cross-origin requests supported for easy integration.
@@ -33,6 +34,7 @@ All endpoints are prefixed with `/api`.
 | `GET`  | `/anime/:anilistId/:episodeNum`   | Get HLS stream directly with AniList ID.         | `anilistId` (required), `episodeNum` (required)  |
 | `GET`  | `/anime/recently-updated`         | Get a list of recently updated anime.            | -                                                |
 | `GET`  | `/anime/most-favorite`            | Get the most favorite anime.                     | `type` (home, weekly, etc.)                      |
+| `GET`  | `/anime/genre/:genreTag`          | Get anime list by genre.                         | `genreTag` (required), `page` (1)                |
 
 ### Utility Endpoints
 
@@ -79,6 +81,11 @@ curl "http://localhost:3001/api/anime/recently-updated"
 ### Get most favorite anime (weekly)
 ```bash
 curl "http://localhost:3001/api/anime/most-favorite?type=weekly"
+```
+
+### Get anime by genre
+```bash
+curl "http://localhost:3001/api/anime/genre/action?page=1"
 ```
 
 ### Map AniList ID
