@@ -248,6 +248,37 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (path === '/api/anime/recently-updated' && event.httpMethod === 'GET') {
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/movie/recentlyUpdated/home`,
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
+    if (path === '/api/anime/most-favorite' && event.httpMethod === 'GET') {
+      const { type = 'home' } = params;
+      
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/movie/mostFavorite`,
+        params: { type },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
     // Default response for unknown routes
     return {
       statusCode: 404,

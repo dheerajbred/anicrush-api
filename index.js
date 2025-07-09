@@ -311,6 +311,52 @@ app.get('/api/anime/:anilistId/:episodeNum', async (req, res) => {
     }
 });
 
+// Endpoint to fetch recently updated anime
+app.get('/api/anime/recently-updated', async (req, res) => {
+    try {
+        const headers = getCommonHeaders();
+
+        const response = await axios({
+            method: 'GET',
+            url: `https://api.anicrush.to/shared/v2/movie/recentlyUpdated/home`,
+            headers
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching recently updated anime:', error);
+        res.status(500).json({
+            error: 'Failed to fetch recently updated anime',
+            message: error.message
+        });
+    }
+});
+
+// Endpoint to fetch most favorite anime
+app.get('/api/anime/most-favorite', async (req, res) => {
+    try {
+        const { type = 'home' } = req.query;
+        const headers = getCommonHeaders();
+
+        const response = await axios({
+            method: 'GET',
+            url: `https://api.anicrush.to/shared/v2/movie/mostFavorite`,
+            params: {
+                type
+            },
+            headers
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching most favorite anime:', error);
+        res.status(500).json({
+            error: 'Failed to fetch most favorite anime',
+            message: error.message
+        });
+    }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'OK' });
