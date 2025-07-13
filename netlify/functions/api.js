@@ -326,6 +326,27 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (path === '/api/anime/movielist_most_watched' && event.httpMethod === 'GET') {
+      const { page = 1, limit = 50 } = params;
+      
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/movie/list`,
+        params: {
+          limit,
+          page,
+          sortBy: 'most_watched'
+        },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
     // Default response for unknown routes
     return {
       statusCode: 404,

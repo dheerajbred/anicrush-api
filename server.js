@@ -395,6 +395,33 @@ app.get('/api/anime/movielist_recently_updated', async (req, res) => {
     }
 });
 
+// Endpoint to fetch most watched movie list
+app.get('/api/anime/movielist_most_watched', async (req, res) => {
+    try {
+        const { page = 1, limit = 50 } = req.query;
+        const headers = getCommonHeaders();
+
+        const response = await axios({
+            method: 'GET',
+            url: `https://api.anicrush.to/shared/v2/movie/list`,
+            params: {
+                limit,
+                page,
+                sortBy: 'most_watched'
+            },
+            headers
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching most watched movie list:', error);
+        res.status(500).json({
+            error: 'Failed to fetch most watched movie list',
+            message: error.message
+        });
+    }
+});
+
 app.head('/', async (req, res) => {
     res.sendStatus(200);
 });
