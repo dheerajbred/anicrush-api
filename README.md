@@ -35,6 +35,7 @@ All endpoints are prefixed with `/api`.
 | `GET`  | `/anime/recently-updated`         | Get a list of recently updated anime.            | -                                                |
 | `GET`  | `/anime/most-favorite`            | Get the most favorite anime.                     | `type` (home, weekly, etc.)                      |
 | `GET`  | `/anime/genre/:genreTag`          | Get anime list by genre.                         | `genreTag` (required), `page` (1)                |
+| `GET`  | `/anime/movielist_recently_updated` | Get recently updated movie list.                 | `page` (1), `limit` (50)                         |
 
 ### Utility Endpoints
 
@@ -86,6 +87,11 @@ curl "http://localhost:3001/api/anime/most-favorite?type=weekly"
 ### Get anime by genre
 ```bash
 curl "http://localhost:3001/api/anime/genre/action?page=1"
+```
+
+### Get recently updated movie list
+```bash
+curl "http://localhost:3001/api/anime/movielist_recently_updated"
 ```
 
 ### Map AniList ID
