@@ -422,6 +422,38 @@ app.get('/api/anime/movielist_most_watched', async (req, res) => {
     }
 });
 
+// Endpoint to fetch anime by genre with limit
+app.get('/api/anime/genres/:genreTag', async (req, res) => {
+    try {
+        const { genreTag } = req.params;
+        const { page = 1, limit = 24 } = req.query;
+
+        if (!genreTag) {
+            return res.status(400).json({ error: 'Genre tag is required' });
+        }
+
+        const headers = getCommonHeaders();
+
+        const response = await axios({
+            method: 'GET',
+            url: `https://api.anicrush.to/shared/v1/genre/detail/${genreTag}`,
+            params: {
+                limit,
+                page
+            },
+            headers
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching anime by genre:', error);
+        res.status(500).json({
+            error: 'Failed to fetch anime by genre',
+            message: error.message
+        });
+    }
+});
+
 app.head('/', async (req, res) => {
     res.sendStatus(200);
 });

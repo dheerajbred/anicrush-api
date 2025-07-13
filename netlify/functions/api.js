@@ -347,6 +347,32 @@ exports.handler = async (event, context) => {
       };
     }
 
+    if (path.startsWith('/api/anime/genres/') && event.httpMethod === 'GET') {
+      const genreTag = path.split('/api/anime/genres/')[1];
+      const { page = 1, limit = 24 } = params;
+
+      if (!genreTag) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Genre tag is required' })
+        };
+      }
+
+      const response = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v1/genre/detail/${genreTag}`,
+        params: { limit, page },
+        headers: getCommonHeaders()
+      });
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(response.data)
+      };
+    }
+
     // Default response for unknown routes
     return {
       statusCode: 404,
