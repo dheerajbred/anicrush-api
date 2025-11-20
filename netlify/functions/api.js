@@ -1,3 +1,20 @@
+// Polyfill File for Netlify Functions environments where global File is missing
+try {
+  if (typeof global.File === 'undefined') {
+    const { Blob } = require('buffer');
+    class SimpleFile extends Blob {
+      constructor(parts, name, options = {}) {
+        super(parts, options);
+        this.name = String(name || 'file');
+        this.lastModified = options.lastModified || Date.now();
+      }
+    }
+    global.File = SimpleFile;
+  }
+} catch (_) {
+  // ignore
+}
+
 const axios = require('axios');
 const { mapAniListToAnicrush, getCommonHeaders } = require('../../mapper');
 const { getHlsLink } = require('../../hls');
