@@ -244,16 +244,13 @@ app.get('/api/anime/I :movieId', async (req, res) => {
 // Retained in case MegaCloud returns to a similar encryption method
 app.get('/api/anime/embed/convert', async (req, res) => {
     try {
-        const { embedUrl, host } = req.query;
+        const { embedUrl } = req.query;
 
         if (!embedUrl || !embedUrl.startsWith('http')) {
             return res.status(400).json({ error: 'Embed URL is required' });
         }
-        if(!host) {
-            return res.status(400).json({ error: 'Host is required' });
-        }
         
-        const hlsData = await getGenericHlsLink(embedUrl, host);
+        const hlsData = await getGenericHlsLink(embedUrl);
         res.json(hlsData);
 
     } catch (error) {

@@ -1,18 +1,13 @@
 const { handleEmbed } = require('./embedHandler');
 
 // Function to get HLS link
-async function getGenericHlsLink(embedUrl, host) {
+async function getGenericHlsLink(embedUrl) {
     try {
         if (!embedUrl || !embedUrl.startsWith('http')) {
             throw new Error('Embed URL is required');
         }
 
-        if(!host) {
-            throw new Error('Host is required');
-        }
-
-        // Use rabbit.js to decode the embed URL and get sources
-        const embedSources = await handleEmbed(embedUrl, host);
+        const embedSources = await handleEmbed(embedUrl);
 
         if (!embedSources || !embedSources.sources || !embedSources.sources.length) {
             throw new Error('No sources found');
@@ -46,4 +41,4 @@ async function getGenericHlsLink(embedUrl, host) {
 
 module.exports = {
     getGenericHlsLink
-}; 
+};

@@ -1,5 +1,4 @@
-const axios = require('axios');
-const CryptoJS = require("crypto-js");
+const { handleEmbed } = require('../embedHandler');
 
 /**
  * Decrypts the sources from a given embed URL by fetching the encryption key and raw source data.
@@ -13,41 +12,24 @@ const CryptoJS = require("crypto-js");
  */
 
 async function decryptSources(embedUrl) {
-    const xraxParams = embedUrl.split('/').pop();
-    const xrax = xraxParams.includes('?') ? xraxParams.split('?')[0] : xraxParams;
-
     try {
-        const { data: key } = await axios.get("https://raw.githubusercontent.com/itzzzme/megacloud-keys/refs/heads/main/key.txt");
-        // const { data: key } = "11c4e4450aee8f0f0395aef2af2ef110481dae6b6d96700b709ced16e307aa54";
-        const { data: rawSourceData } = await axios.get(`https://megacloud.blog/embed-2/v2/e-1/getSources?id=${ xrax }`);
-        const encrypted = rawSourceData?.sources;
-        let decryptedSources;
-
-        
-
-        if (!encrypted) throw new Error("Encrypted source missing in response");
-        const decrypted = CryptoJS.AES.decrypt(encrypted, key).toString(
-            CryptoJS.enc.Utf8
-        );
-
-        if (!decrypted) throw new Error("Failed to decrypt source");
-
-        try {
-            decryptedSources = JSON.parse(decrypted);
-        } catch (e) {
-            throw new Error("Decrypted data is not valid JSON");
+        if (!embedUrl || !embedUrl.startsWith('http')) {
+            throw new Error('Embed URL is required');
         }
-
+        const extracted = await handleEmbed(embedUrl);
+        if (!extracted || !extracted.sources || extracted.sources.length === 0) {
+            throw new Error('No sources found');
+        }
         return {
             status: true,
             result: {
-                sources: decryptedSources,
-                tracks: rawSourceData.tracks,
-                intro: rawSourceData.intro ?? null,
-                outro: rawSourceData.outro ?? null,
-                server: rawSourceData.server ?? null
+                sources: extracted.sources,
+                tracks: extracted.tracks,
+                intro: extracted.intro ?? null,
+                outro: extracted.outro ?? null,
+                server: extracted.server ?? null
             }
-        }
+        };
     } catch (error) {
         console.error(`[ERROR][decryptSources] Error decrypting ${ embedUrl }:`, error);
         return {

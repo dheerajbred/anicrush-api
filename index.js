@@ -3,6 +3,8 @@ const axios = require('axios');
 const cors = require('cors');
 const { mapAniListToAnicrush, getCommonHeaders } = require('./mapper');
 const { getHlsLink } = require('./hls');
+const { getGenericHlsLink } = require('./genericHls');
+const { decryptSources } = require('./sources/getEmbedSource');
 require('dotenv').config();
 
 const app = express();
@@ -240,8 +242,53 @@ app.get('/api/anime/hls/:movieId', async (req, res) => {
     }
 });
 
-// Combined endpoint to get HLS link directly from AniList ID
-app.get('/api/anime/:anilistId/:episodeNum', async (req, res) => {
+// Embed conversion endpoints
+app.get('/api/anime/embed/convert', async (req, res) => {
+    try {
+        const { embedUrl } = req.query;
+
+        if (!embedUrl || !embedUrl.startsWith('http')) {
+            return res.status(400).json({ error: 'Embed URL is required' });
+        }
+
+        const hlsData = await getGenericHlsLink(embedUrl);
+        res.json(hlsData);
+    } catch (error) {
+        console.error('Error fetching HLS link:', error);
+        res.status(500).json({
+            error: 'Failed to fetch HLS link',
+            message: error.message
+        });
+    }
+});
+
+app.get('/api/anime/embed/convert/v2', async (req, res) => {
+    try {
+        const { embedUrl } = req.query;
+
+        if (!embedUrl || !embedUrl.startsWith('http')) {
+            return res.status(400).json({ error: 'Embed URL is required' });
+        }
+
+        const hlsData = await decryptSources(embedUrl);
+        res.json(hlsData);
+    } catch (error) {
+        console.error('Error fetching HLS link:', error);
+        if (error == 'Malformed UTF-8 data') {
+            return res.status(500).json({
+                error: 'Failed to fetch HLS link',
+                message: 'MegaCloud decryption key is invalid'
+            });
+        }
+        res.status(500).json({
+            error: 'Failed to fetch HLS link',
+            message: error.message
+        });
+    }
+});
+
+// Combined endpoint to get HLS link directly from AniList ID (renamed to avoid collisions)
+app.get('/api/anime/hls-by-anilist/:anilistId(\\d+)/:episodeNum(\\d+)', async (req, res) => {
     try {
         const { anilistId, episodeNum } = req.params;
         const { server = 4, subOrDub = 'sub' } = req.query;
@@ -485,4 +532,4 @@ if (process.env.VERCEL !== '1') {
 }
 
 // Export the Express app for Vercel
-module.exports = app; 
+module.exports = app;

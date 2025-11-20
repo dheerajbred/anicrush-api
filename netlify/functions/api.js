@@ -184,27 +184,36 @@ exports.handler = async (event, context) => {
 
     if (path.includes('/api/anime/hls/') && event.httpMethod === 'GET') {
       const movieId = path.split('/api/anime/hls/')[1];
-      const { url } = params;
-      
-      if (!url) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'URL is required' })
-        };
+      const { url, episode = 1, server = 4, subOrDub = 'sub' } = params;
+
+      if (url) {
+        const hlsLink = await getHlsLink(url);
+        return { statusCode: 200, headers, body: JSON.stringify(hlsLink) };
       }
 
-      const hlsLink = await getHlsLink(url);
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(hlsLink)
-      };
+      if (!movieId) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Movie ID is required' }) };
+      }
+
+      const embedResponse = await axios({
+        method: 'GET',
+        url: `https://api.anicrush.to/shared/v2/episode/sources`,
+        params: { _movieId: movieId, ep: episode, sv: server, sc: subOrDub },
+        headers: getCommonHeaders()
+      });
+
+      if (!embedResponse.data || embedResponse.data.status === false) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Embed link not found' }) };
+      }
+
+      const embedUrl = embedResponse.data.result.link;
+      const hlsData = await getHlsLink(embedUrl);
+      return { statusCode: 200, headers, body: JSON.stringify(hlsData) };
     }
 
     // Embed conversion endpoints
     if (path === '/api/anime/embed/convert' && event.httpMethod === 'GET') {
-      const { embedUrl, host } = params;
+      const { embedUrl } = params;
 
       if (!embedUrl || !embedUrl.startsWith('http')) {
         return {
@@ -213,15 +222,8 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ error: 'Embed URL is required' })
         };
       }
-      if (!host) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Host is required' })
-        };
-      }
       
-      const hlsData = await getGenericHlsLink(embedUrl, host);
+      const hlsData = await getGenericHlsLink(embedUrl);
       return {
         statusCode: 200,
         headers,
@@ -391,4 +393,4 @@ exports.handler = async (event, context) => {
       })
     };
   }
-}; 
+};
